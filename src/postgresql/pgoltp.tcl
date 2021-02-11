@@ -186,7 +186,9 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
 
             COMMIT;
             EXCEPTION
-            WHEN serialization_failure OR deadlock_detected OR no_data_found
+            WHEN serialization_failure
+            THEN NULL;
+            WHEN deadlock_detected OR no_data_found
             THEN ROLLBACK;
         END; }
         set sql(3) { CREATE OR REPLACE PROCEDURE DELIVERY (
@@ -225,7 +227,9 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
             DBMS_OUTPUT.PUT_LINE('D: ' || d_d_id || 'O: ' || d_no_o_id || 'time ' || tstamp);
             END LOOP;
             EXCEPTION
-            WHEN serialization_failure OR deadlock_detected OR no_data_found
+            WHEN serialization_failure
+            THEN NULL;
+            WHEN deadlock_detected OR no_data_found
             THEN ROLLBACK;
         END; }
         set sql(4) { CREATE OR REPLACE PROCEDURE PAYMENT (
@@ -347,7 +351,9 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
             p_w_id, tstamp, p_h_amount, h_data);
             COMMIT;
             EXCEPTION
-            WHEN serialization_failure OR deadlock_detected OR no_data_found
+            WHEN serialization_failure
+            THEN NULL;
+            WHEN deadlock_detected OR no_data_found
             THEN ROLLBACK;
         END; }
         set sql(5) { CREATE OR REPLACE PROCEDURE OSTAT (
@@ -430,7 +436,9 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
             i := i+1;
             END LOOP;
             EXCEPTION
-            WHEN serialization_failure OR deadlock_detected OR no_data_found
+            WHEN serialization_failure
+            THEN NULL;
+            WHEN deadlock_detected OR no_data_found
             THEN ROLLBACK;
         END; }
         set sql(6) { CREATE OR REPLACE PROCEDURE SLEV (
@@ -452,7 +460,9 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
             s_i_id = ol_i_id AND s_quantity < threshold;
             COMMIT;
             EXCEPTION
-            WHEN serialization_failure OR deadlock_detected OR no_data_found
+            WHEN serialization_failure
+            THEN NULL;
+            WHEN deadlock_detected OR no_data_found
             THEN ROLLBACK;
         END; }
         if { $citus_compatible eq "true" } {
@@ -724,7 +734,9 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 END LOOP;
 
                 EXCEPTION
-                WHEN serialization_failure OR deadlock_detected OR no_data_found
+                WHEN serialization_failure
+                THEN NULL;
+                WHEN deadlock_detected OR no_data_found
                 THEN ROLLBACK;
                 END;
                 $$
@@ -793,7 +805,9 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 AND c_w_id = d_w_id;
 
                 EXCEPTION
-                WHEN serialization_failure OR deadlock_detected OR no_data_found
+                WHEN serialization_failure
+                THEN NULL;
+                WHEN deadlock_detected OR no_data_found
                 THEN ROLLBACK;
                 END;
                 $$
@@ -911,7 +925,9 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 VALUES (p_c_d_id, p_c_w_id, p_c_id, p_d_id,	p_w_id, tstamp, p_h_amount, h_data);
 
                 EXCEPTION
-                WHEN serialization_failure OR deadlock_detected OR no_data_found
+                WHEN serialization_failure
+                THEN NULL;
+                WHEN deadlock_detected OR no_data_found
                 THEN ROLLBACK;
                 END;
                 $$
@@ -981,7 +997,9 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 os_c_line := os_c_line || ',' || os_ol.ol_i_id || ',' || os_ol.ol_supply_w_id || ',' || os_ol.ol_quantity || ',' || os_ol.ol_amount || ',' || os_ol.ol_delivery_d;
                 END LOOP;
                 EXCEPTION
-                WHEN serialization_failure OR deadlock_detected OR no_data_found
+                WHEN serialization_failure
+                THEN NULL;
+                WHEN deadlock_detected OR no_data_found
                 THEN ROLLBACK;
                 END;
                 $$
@@ -1263,7 +1281,9 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 RETURN no_s_quantity;
 
                 EXCEPTION
-                WHEN serialization_failure OR deadlock_detected OR no_data_found
+                WHEN serialization_failure
+                THEN RETURN 0;
+                WHEN deadlock_detected OR no_data_found
                 THEN ROLLBACK;
                 END;
                 ' LANGUAGE 'plpgsql';
@@ -1287,6 +1307,7 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 FROM new_order as del_new_order
                 USING UNNEST(d_id_in_array) AS d_ids
                 WHERE no_d_id = d_ids
+                AND no_d_id = any(d_id_in_array)
                 AND no_w_id = d_w_id
                 AND del_new_order.no_o_id = (select min (select_new_order.no_o_id)
                 from new_order as select_new_order
@@ -1332,7 +1353,9 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 RETURN 1;
 
                 EXCEPTION
-                WHEN serialization_failure OR deadlock_detected OR no_data_found
+                WHEN serialization_failure
+                THEN RETURN 1;
+                WHEN deadlock_detected OR no_data_found
                 THEN ROLLBACK;
                 END;
                 ' LANGUAGE 'plpgsql';
@@ -1458,7 +1481,9 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 RETURN p_c_id;
 
                 EXCEPTION
-                WHEN serialization_failure OR deadlock_detected OR no_data_found
+                WHEN serialization_failure
+                THEN RETURN 1;
+                WHEN deadlock_detected OR no_data_found
                 THEN ROLLBACK;
                 END;
                 ' LANGUAGE 'plpgsql';
@@ -1523,7 +1548,9 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
                 RETURN NEXT os_ol;
                 END LOOP;
                 EXCEPTION
-                WHEN serialization_failure OR deadlock_detected OR no_data_found
+                WHEN serialization_failure
+                THEN RETURN;
+                WHEN deadlock_detected OR no_data_found
                 THEN ROLLBACK;
                 END;
                 ' LANGUAGE 'plpgsql';
@@ -1549,7 +1576,9 @@ proc CreateStoredProcs { lda ora_compatible citus_compatible pg_storedprocs } {
 
                 RETURN stock_count;
                 EXCEPTION
-                WHEN serialization_failure OR deadlock_detected OR no_data_found
+                WHEN serialization_failure
+                THEN RETURN 0;
+                WHEN deadlock_detected OR no_data_found
                 THEN ROLLBACK;
                 END;
                 ' LANGUAGE 'plpgsql';
@@ -1641,7 +1670,7 @@ proc CreateUserDatabase { lda host port sslmode db tspace superuser superuser_pa
     }
     for { set i 1 } { $i <= $stmnt_count } { incr i } {
         set result [ pg_exec $lda $sql($i) ]
-        if {[pg_result $result -status] != "PGRES_COMMAND_OK"} {
+        if {[pg_result $result -status] ni {"PGRES_TUPLES_OK" "PGRES_COMMAND_OK"}} {
             error "[pg_result $result -error]"
         } else {
             pg_result $result -clear
@@ -1663,16 +1692,16 @@ proc CreateTables { lda ora_compatible citus_compatible num_part } {
         set sql(8) "CREATE TABLE ORDERS (O_ID NUMBER, O_W_ID NUMBER, O_D_ID NUMBER, O_C_ID NUMBER, O_CARRIER_ID NUMBER, O_OL_CNT NUMBER, O_ALL_LOCAL NUMBER, O_ENTRY_D DATE)"
         set sql(9) "CREATE TABLE ORDER_LINE (OL_W_ID NUMBER, OL_D_ID NUMBER, OL_O_ID NUMBER, OL_NUMBER NUMBER, OL_I_ID NUMBER, OL_DELIVERY_D DATE, OL_AMOUNT NUMBER, OL_SUPPLY_W_ID NUMBER, OL_QUANTITY NUMBER, OL_DIST_INFO CHAR(24))"
     } else {
-        set sql(1) "CREATE TABLE CUSTOMER (C_SINCE TIMESTAMP WITH TIME ZONE NOT NULL, C_ID INTEGER NOT NULL, C_W_ID INTEGER NOT NULL, C_D_ID SMALLINT NOT NULL, C_PAYMENT_CNT SMALLINT NOT NULL, C_DELIVERY_CNT SMALLINT NOT NULL, C_FIRST CHARACTER VARYING(16) NOT NULL, C_MIDDLE CHARACTER(2) NOT NULL, C_LAST CHARACTER VARYING(16) NOT NULL, C_STREET_1 CHARACTER VARYING(20) NOT NULL, C_STREET_2 CHARACTER VARYING(20) NOT NULL, C_CITY CHARACTER VARYING(20) NOT NULL, C_STATE CHARACTER(2) NOT NULL, C_ZIP CHARACTER(9) NOT NULL, C_PHONE CHARACTER(16) NOT NULL, C_CREDIT CHARACTER(2) NOT NULL, C_CREDIT_LIM NUMERIC(12,2) NOT NULL, C_DISCOUNT NUMERIC(4,4) NOT NULL, C_BALANCE NUMERIC(12,2) NOT NULL, C_YTD_PAYMENT NUMERIC(12,2) NOT NULL, C_DATA CHARACTER VARYING(500) NOT NULL, CONSTRAINT CUSTOMER_I1 PRIMARY KEY (C_W_ID, C_D_ID, C_ID))"
-        set sql(2) "CREATE TABLE DISTRICT (D_W_ID INTEGER NOT NULL, D_NEXT_O_ID INTEGER NOT NULL, D_ID SMALLINT NOT NULL, D_YTD NUMERIC(12,2) NOT NULL, D_TAX NUMERIC(4,4) NOT NULL, D_NAME CHARACTER VARYING(10) NOT NULL, D_STREET_1 CHARACTER VARYING(20) NOT NULL, D_STREET_2 CHARACTER VARYING(20) NOT NULL, D_CITY CHARACTER VARYING(20) NOT NULL, D_STATE CHARACTER(2) NOT NULL, D_ZIP CHARACTER(9) NOT NULL, CONSTRAINT DISTRICT_I1 PRIMARY KEY (D_W_ID, D_ID))"
-        set sql(3) "CREATE TABLE HISTORY (H_DATE TIMESTAMP WITH TIME ZONE NOT NULL, H_C_ID INTEGER, H_C_W_ID INTEGER NOT NULL, H_W_ID INTEGER NOT NULL, H_C_D_ID SMALLINT NOT NULL, H_D_ID SMALLINT NOT NULL, H_AMOUNT NUMERIC(6,2) NOT NULL, H_DATA CHARACTER VARYING(24) NOT NULL)"
-        set sql(4) "CREATE TABLE ITEM (I_ID INTEGER NOT NULL, I_IM_ID INTEGER NOT NULL, I_NAME CHARACTER VARYING(24) NOT NULL, I_PRICE NUMERIC(5,2) NOT NULL, I_DATA CHARACTER VARYING(50) NOT NULL, CONSTRAINT ITEM_I1 PRIMARY KEY (I_ID))"
-        set sql(5) "CREATE TABLE WAREHOUSE (W_ID INTEGER NOT NULL, W_NAME CHARACTER VARYING(10) NOT NULL, W_STREET_1 CHARACTER VARYING(20) NOT NULL, W_STREET_2 CHARACTER VARYING(20) NOT NULL, W_CITY CHARACTER VARYING(20) NOT NULL, W_STATE CHARACTER(2) NOT NULL, W_ZIP CHARACTER(9) NOT NULL, W_TAX NUMERIC(4,4) NOT NULL, W_YTD NUMERIC(12,2) NOT NULL, CONSTRAINT WAREHOUSE_I1 PRIMARY KEY (W_ID))"
-        set sql(6) "CREATE TABLE STOCK (S_I_ID INTEGER NOT NULL, S_W_ID INTEGER NOT NULL, S_YTD INTEGER NOT NULL, S_QUANTITY SMALLINT NOT NULL, S_ORDER_CNT SMALLINT NOT NULL, S_REMOTE_CNT SMALLINT NOT NULL, S_DIST_01 CHARACTER(24) NOT NULL, S_DIST_02 CHARACTER(24) NOT NULL, S_DIST_03 CHARACTER(24) NOT NULL, S_DIST_04 CHARACTER(24) NOT NULL, S_DIST_05 CHARACTER(24) NOT NULL, S_DIST_06 CHARACTER(24) NOT NULL, S_DIST_07 CHARACTER(24) NOT NULL, S_DIST_08 CHARACTER(24) NOT NULL, S_DIST_09 CHARACTER(24) NOT NULL, S_DIST_10 CHARACTER(24) NOT NULL, S_DATA CHARACTER VARYING(50) NOT NULL, CONSTRAINT STOCK_I1 PRIMARY KEY (S_I_ID, S_W_ID))"
-        set sql(7) "CREATE TABLE NEW_ORDER (NO_W_ID INTEGER NOT NULL, NO_O_ID INTEGER NOT NULL, NO_D_ID SMALLINT NOT NULL, CONSTRAINT NEW_ORDER_I1 PRIMARY KEY (NO_W_ID, NO_D_ID, NO_O_ID))"
-        set sql(8) "CREATE TABLE ORDERS (O_ENTRY_D TIMESTAMP WITH TIME ZONE NOT NULL, O_ID INTEGER NOT NULL, O_W_ID INTEGER NOT NULL, O_C_ID INTEGER NOT NULL, O_D_ID SMALLINT NOT NULL, O_CARRIER_ID SMALLINT, O_OL_CNT SMALLINT NOT NULL, O_ALL_LOCAL SMALLINT NOT NULL, CONSTRAINT ORDERS_I1 PRIMARY KEY (O_W_ID, O_D_ID, O_ID))"
+        set sql(1) "CREATE TABLE CUSTOMER (C_SINCE TIMESTAMP WITH TIME ZONE NOT NULL, C_ID INTEGER NOT NULL, C_W_ID INTEGER NOT NULL, C_D_ID SMALLINT NOT NULL, C_PAYMENT_CNT SMALLINT NOT NULL, C_DELIVERY_CNT SMALLINT NOT NULL, C_FIRST CHARACTER VARYING(16) NOT NULL, C_MIDDLE CHARACTER(2) NOT NULL, C_LAST CHARACTER VARYING(16) NOT NULL, C_STREET_1 CHARACTER VARYING(20) NOT NULL, C_STREET_2 CHARACTER VARYING(20) NOT NULL, C_CITY CHARACTER VARYING(20) NOT NULL, C_STATE CHARACTER(2) NOT NULL, C_ZIP CHARACTER(9) NOT NULL, C_PHONE CHARACTER(16) NOT NULL, C_CREDIT CHARACTER(2) NOT NULL, C_CREDIT_LIM NUMERIC(12,2) NOT NULL, C_DISCOUNT NUMERIC(4,4) NOT NULL, C_BALANCE NUMERIC(12,2) NOT NULL, C_YTD_PAYMENT NUMERIC(12,2) NOT NULL, C_DATA CHARACTER VARYING(500) NOT NULL, CONSTRAINT CUSTOMER_I1 PRIMARY KEY (C_W_ID, C_D_ID, C_ID))  WITH (distributed_by = 'c_w_id', colocate_with = 'warehouse')"
+        set sql(2) "CREATE TABLE DISTRICT (D_W_ID INTEGER NOT NULL, D_NEXT_O_ID INTEGER NOT NULL, D_ID SMALLINT NOT NULL, D_YTD NUMERIC(12,2) NOT NULL, D_TAX NUMERIC(4,4) NOT NULL, D_NAME CHARACTER VARYING(10) NOT NULL, D_STREET_1 CHARACTER VARYING(20) NOT NULL, D_STREET_2 CHARACTER VARYING(20) NOT NULL, D_CITY CHARACTER VARYING(20) NOT NULL, D_STATE CHARACTER(2) NOT NULL, D_ZIP CHARACTER(9) NOT NULL, CONSTRAINT DISTRICT_I1 PRIMARY KEY (D_W_ID, D_ID)) WITH (distributed_by = 'd_w_id', colocate_with = 'warehouse')"
+        set sql(3) "CREATE TABLE HISTORY (H_DATE TIMESTAMP WITH TIME ZONE NOT NULL, H_C_ID INTEGER, H_C_W_ID INTEGER NOT NULL, H_W_ID INTEGER NOT NULL, H_C_D_ID SMALLINT NOT NULL, H_D_ID SMALLINT NOT NULL, H_AMOUNT NUMERIC(6,2) NOT NULL, H_DATA CHARACTER VARYING(24) NOT NULL) WITH (distributed_by = 'h_w_id', colocate_with = 'warehouse')"
+        set sql(4) "CREATE TABLE ITEM (I_ID INTEGER NOT NULL, I_IM_ID INTEGER NOT NULL, I_NAME CHARACTER VARYING(24) NOT NULL, I_PRICE NUMERIC(5,2) NOT NULL, I_DATA CHARACTER VARYING(50) NOT NULL, CONSTRAINT ITEM_I1 PRIMARY KEY (I_ID)) WITH (global)"
+        set sql(5) "CREATE TABLE WAREHOUSE (W_ID INTEGER NOT NULL, W_NAME CHARACTER VARYING(10) NOT NULL, W_STREET_1 CHARACTER VARYING(20) NOT NULL, W_STREET_2 CHARACTER VARYING(20) NOT NULL, W_CITY CHARACTER VARYING(20) NOT NULL, W_STATE CHARACTER(2) NOT NULL, W_ZIP CHARACTER(9) NOT NULL, W_TAX NUMERIC(4,4) NOT NULL, W_YTD NUMERIC(12,2) NOT NULL, CONSTRAINT WAREHOUSE_I1 PRIMARY KEY (W_ID)) WITH (distributed_by = 'w_id')"
+        set sql(6) "CREATE TABLE STOCK (S_I_ID INTEGER NOT NULL, S_W_ID INTEGER NOT NULL, S_YTD INTEGER NOT NULL, S_QUANTITY SMALLINT NOT NULL, S_ORDER_CNT SMALLINT NOT NULL, S_REMOTE_CNT SMALLINT NOT NULL, S_DIST_01 CHARACTER(24) NOT NULL, S_DIST_02 CHARACTER(24) NOT NULL, S_DIST_03 CHARACTER(24) NOT NULL, S_DIST_04 CHARACTER(24) NOT NULL, S_DIST_05 CHARACTER(24) NOT NULL, S_DIST_06 CHARACTER(24) NOT NULL, S_DIST_07 CHARACTER(24) NOT NULL, S_DIST_08 CHARACTER(24) NOT NULL, S_DIST_09 CHARACTER(24) NOT NULL, S_DIST_10 CHARACTER(24) NOT NULL, S_DATA CHARACTER VARYING(50) NOT NULL, CONSTRAINT STOCK_I1 PRIMARY KEY (S_I_ID, S_W_ID)) WITH (distributed_by = 's_w_id', colocate_with = 'warehouse')"
+        set sql(7) "CREATE TABLE NEW_ORDER (NO_W_ID INTEGER NOT NULL, NO_O_ID INTEGER NOT NULL, NO_D_ID SMALLINT NOT NULL, CONSTRAINT NEW_ORDER_I1 PRIMARY KEY (NO_W_ID, NO_D_ID, NO_O_ID)) WITH (distributed_by = 'no_w_id', colocate_with = 'warehouse')"
+        set sql(8) "CREATE TABLE ORDERS (O_ENTRY_D TIMESTAMP WITH TIME ZONE NOT NULL, O_ID INTEGER NOT NULL, O_W_ID INTEGER NOT NULL, O_C_ID INTEGER NOT NULL, O_D_ID SMALLINT NOT NULL, O_CARRIER_ID SMALLINT, O_OL_CNT SMALLINT NOT NULL, O_ALL_LOCAL SMALLINT NOT NULL, CONSTRAINT ORDERS_I1 PRIMARY KEY (O_W_ID, O_D_ID, O_ID)) WITH (distributed_by = 'o_w_id', colocate_with = 'warehouse')"
         if {$num_part eq 0} {
-            set sql(9) "CREATE TABLE ORDER_LINE (OL_DELIVERY_D TIMESTAMP WITH TIME ZONE, OL_O_ID INTEGER NOT NULL, OL_W_ID INTEGER NOT NULL, OL_I_ID INTEGER NOT NULL, OL_SUPPLY_W_ID INTEGER NOT NULL, OL_D_ID SMALLINT NOT NULL, OL_NUMBER SMALLINT NOT NULL, OL_QUANTITY SMALLINT NOT NULL, OL_AMOUNT NUMERIC(6,2), OL_DIST_INFO CHARACTER(24), CONSTRAINT ORDER_LINE_I1 PRIMARY KEY (OL_W_ID, OL_D_ID, OL_O_ID, OL_NUMBER))"
+            set sql(9) "CREATE TABLE ORDER_LINE (OL_DELIVERY_D TIMESTAMP WITH TIME ZONE, OL_O_ID INTEGER NOT NULL, OL_W_ID INTEGER NOT NULL, OL_I_ID INTEGER NOT NULL, OL_SUPPLY_W_ID INTEGER NOT NULL, OL_D_ID SMALLINT NOT NULL, OL_NUMBER SMALLINT NOT NULL, OL_QUANTITY SMALLINT NOT NULL, OL_AMOUNT NUMERIC(6,2), OL_DIST_INFO CHARACTER(24), CONSTRAINT ORDER_LINE_I1 PRIMARY KEY (OL_W_ID, OL_D_ID, OL_O_ID, OL_NUMBER)) WITH (distributed_by = 'ol_w_id', colocate_with = 'warehouse')"
         } else {
             set sql(9) "CREATE TABLE ORDER_LINE (OL_DELIVERY_D TIMESTAMP WITH TIME ZONE, OL_O_ID INTEGER NOT NULL, OL_W_ID INTEGER NOT NULL, OL_I_ID INTEGER NOT NULL, OL_SUPPLY_W_ID INTEGER NOT NULL, OL_D_ID SMALLINT NOT NULL, OL_NUMBER SMALLINT NOT NULL, OL_QUANTITY SMALLINT NOT NULL, OL_AMOUNT NUMERIC(6,2), OL_DIST_INFO CHARACTER(24), CONSTRAINT ORDER_LINE_I1 PRIMARY KEY (OL_W_ID, OL_D_ID, OL_O_ID, OL_NUMBER)) PARTITION BY HASH (OL_W_ID)"
         }
@@ -2109,7 +2138,7 @@ proc do_tpcc { host port sslmode count_ware superuser superuser_password default
         if { $lda eq "Failed" } {
             error "error, the database connection to $host could not be established"
         } else {
-            CreateUserDatabase $lda $host $port $sslmode $db $tspace $superuser $superuser_password $user $password
+            #CreateUserDatabase $lda $host $port $sslmode $db $tspace $superuser $superuser_password $user $password
             set result [ pg_exec $lda "commit" ]
             pg_result $result -clear
             pg_disconnect $lda
